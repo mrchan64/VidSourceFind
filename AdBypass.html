@@ -11,25 +11,48 @@
 
     <title>Ad Bypass Kissanime</title>
 
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
     <!-- Custom styles for this template -->
+    <style>
+    #searchname {
+      margin: 1%;
+      width: 90%;
+      float: left;
+    }
+    #search {
+      margin: 1%;
+      margin-left: 0;
+      width: 7%;
+    }
+    </style>
   </head>
   <body>
+    <div>
+      <input type="text" class="form-control" id="searchname">
+      <button type="button" class="btn btn-primary" id="search">Search</button>
+    </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script>
-    $.ajax(
-    {
-        type: "GET",
-        url: "http://kissanime.ru",
-        dataType: "jsonp",
-        jsonpCallback: 'callback',
-        success: function (message) {
-          console.log("success");
-            //console.log(message)
-            console.log("done");
-        }
+    var to;
+    $('#search').click(function(){
+      if($('#searchname').val()===""){
+        return;
+      }
+      clearInterval(to);
+      $.post("/search", {
+        'term': $('#searchname').val()
+      }, function(data, status){
+        to = setInterval(function(){
+          $.get("/search", function(data, status){
+            if(!(data.names==="notyet")){
+              console.log("here")
+              clearInterval(to);
+            }
+          })
+        },500);
+      });
     });
-
     </script>
   </body>
 </html>
