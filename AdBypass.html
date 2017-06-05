@@ -15,6 +15,24 @@
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
     <!-- Custom styles for this template -->
     <style>
+    .choice {
+      width: 100%;
+      height: 25px;
+      margin: 0 auto;
+      left: 0;
+      right: 0;
+      float: left;
+      margin-top: 10px;
+      font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;
+      font-size: 14px;
+      font-style: normal;
+      font-variant: normal;
+      font-weight: 400;
+      line-height: 20px;
+    }
+    .choice:hover{
+      background: rgba(150,150,150,.7);
+    }
     #searchname {
       margin: 1%;
       width: 90%;
@@ -25,6 +43,43 @@
       margin-left: 0;
       width: 7%;
     }
+    #choicewrapper {
+      width: 100%;
+      height: 160px;
+    }
+    #choicedisplay {
+      border-style: solid;
+      border-width: 0px;
+      border-color: #aaaaaa;
+      border-radius: 5px;
+      margin-left: 1%;
+      margin-right: 1%;
+      width: 98%;
+      height: 0%;
+      overflow: hidden;
+      background: rgba(255,255,255,.7);
+    }
+    #episodechoice {
+      width: 100%;
+    }
+    #episodechooser {
+      margin: 1%;
+      width: 30%;
+      float: left;
+    }
+    #episodebutton {
+      width: 100%;
+    }
+    #episodedisplay {
+      margin: 1%;
+      padding-top: 17px;
+      font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;
+      font-size: 14px;
+      font-style: normal;
+      font-variant: normal;
+      font-weight: 400;
+      line-height: 20px;
+    }
     </style>
   </head>
   <body>
@@ -32,22 +87,131 @@
       <input type="text" class="form-control" id="searchname">
       <button type="button" class="btn btn-primary" id="search">Search</button>
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <div id="choicewrapper">
+      <div id="choicedisplay">
+      </div>
+    </div>
+    <div id="episodechoice">
+      <div class="dropdown" id="episodechooser">
+        <button class="btn btn-default dropdown-toggle" type="button" id="episodebutton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Episodes  <span class="caret"></span></button>
+        <div id="episodes" role="menu" class="dropdown-menu" aria-labelledby="episodebutton">
+          <li role="presentation"><a class="dropdown-item">Nothing Yet</a></li>
+        </div>
+      </div>
+      <p id="episodedisplay"><p>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script>
     var to;
+    var to2;
     $('#search').click(function(){
       if($('#searchname').val()===""){
         return;
       }
       clearInterval(to);
+      clearInterval(to2);
       $.post("/search", {
         'term': $('#searchname').val()
       }, function(data, status){
+        $("#choicedisplay").stop();
+        if($("#choicedisplay").attr("open")){
+          $("#choicedisplay").css({"height":"0%"});
+        }
+        $("#choicedisplay").empty();
+        var loading = $("<p></p");
+        loading.html("Loading.");
+        loading.attr("align","center");
+        loading.addClass("choice");
+        $("#choicedisplay").append(loading);
+        $("#choicedisplay").css({"border-width":"1px"});
+        $("#choicedisplay").attr("open",1);
+        $("#choicedisplay").animate({"height":"25%"},200,"easeOutQuad");
         to = setInterval(function(){
+          var str = loading.html();
+          str+=".";
+          if(str.length>10){
+            str="Loading";
+          }
+          loading.html(str);
           $.get("/search", function(data, status){
             if(!(data.names==="notyet")){
-              console.log("here")
               clearInterval(to);
+              $("#choicedisplay").stop();
+              $("#choicedisplay").animate({"height":"0%"},200,"easeInQuad", function(){
+                $("#choicedisplay").css({"border-width":"0px"});
+                $("#choicedisplay").empty();
+                var pwidth = String(100/data.names.length)+"%";
+                if(data.names.length>4){
+                  pwidth="25%";
+                }
+                var numproc = data.names.length;
+                if(numproc>16){
+                  numproc=16;
+                }
+                for(var i = 0; i<numproc; i++){
+                  var choice=$("<p></p");
+                  choice.html(data.names[i]);
+                  choice.attr("align","center");
+                  choice.addClass("choice");
+                  choice.css({"width":pwidth,"overflow":"hidden"});
+                  choice.click(function(){
+                    var anime = $(this).html();
+                    console.log("hi");
+                    $.post("/episodes", {
+                      'title': anime
+                    }, function(data, status){
+                      $("#episodes").empty();
+                      var epload = $("<a></a>");
+                      epload.addClass("dropdown-item");
+                      epload.html("Loading");
+                      var eploadwrap = $("<li></li>");
+                      eploadwrap.attr("role","presentation");
+                      eploadwrap.append(epload);
+                      $("#episodes").append(eploadwrap);
+                      to2 = setInterval(function(){
+                        var str = epload.html();
+                        str+=".";
+                        if(str.length>10){
+                          str="Loading";
+                        }
+                        epload.html(str);
+                        $.get("/episodes", function(data, status){
+                          if(!(data.eps==="notyet")){
+                            clearInterval(to2);
+                            console.log(data);
+                            $("#episodes").empty()
+                            for(var j = 0; j<data.eps.length; j++){
+                              var ep = $("<a></a>");
+                              ep.addClass("dropdown-item");
+                              ep.html(data.eps[j].title);
+                              ep.attr("link",data.eps[j].url);
+                              ep.click(function(){
+                                $("#episodedisplay").html($(this).html());
+                                var link = $(this).attr("link")
+                                $.post("/watch", {
+                                  url: link
+                                }, function(data, status){
+                                  //put repeat
+                                });
+                              });
+                              var epwrap = $("<li></li>");
+                              epwrap.attr("role","presentation");
+                              epwrap.append(ep);
+                              $("#episodes").append(epwrap);
+                            }
+                          }
+                        });
+                      },500);
+                    });
+                  });
+                  $("#choicedisplay").append(choice);
+                }
+                $("#choicedisplay").css({"border-width":"1px"});
+                var pheight = String(25*(Math.floor((numproc-1)/4)+1))+"%";
+                $("#choicedisplay").animate({"height":pheight},200,"easeInQuad");
+              });
             }
           })
         },500);
